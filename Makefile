@@ -6,7 +6,7 @@ LDLIBS=-lm `pkg-config --libs ${PKG}`
 LDFLAGS=-O2
 
 SOURCES=main.c ui.c
-HEADERS=
+HEADERS=ui.h
 EXECUTABLE=main
 
 OBJECTS=$(addsuffix .o, $(basename ${SOURCES}))

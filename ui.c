@@ -82,15 +82,14 @@ void ui_begin(int w, int h)
 	uistate.hotitem = 0;
 }
 
-void ui_end(void)
+int ui_end(void)
 {
-	if (uistate.mousedown == 0)
-		uistate.activeitem = 0;
-	else if (uistate.activeitem == 0)
-		uistate.activeitem = -1;
-	if (uistate.keyentered == ALLEGRO_KEY_TAB)
-		uistate.kbditem = 0;
+	int ui_state = uistate.activeitem;
+	if (uistate.mousedown == 0) uistate.activeitem = 0;
+	else if (uistate.activeitem == 0) uistate.activeitem = -1;
+	if (uistate.keyentered == ALLEGRO_KEY_TAB) uistate.kbditem = 0;
 	uistate.keyentered = 0;
+	return (ui_state > 0) ? 1 : 0;
 }
 
 /* Widgets */

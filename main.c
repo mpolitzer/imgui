@@ -21,18 +21,6 @@ struct uielements {
 	int drag_drop[8];
 } uielements = {0, {1, 1, 1, 1, 1, 1, 1, 1}};
 
-/* ui */
-
-void draw_rect(int x, int y, int w, int h, float color);
-void ui_update_mouse_axes(int mousex, int mousey);
-void ui_update_mouse_down(int mousedown);
-void ui_begin(int w, int h);
-void ui_end(void);
-int ui_button(int id, int x, int y, int w, int h);
-
-
-
-
 #define die(error, ...) _die(error, __FILE__, __LINE__, __VA_ARGS__)
 void _die(int error, char* filename, int line, const char* format, ...)
 {
@@ -140,7 +128,8 @@ void game_render(void)
 	for (i=0; i<10; i++)
 		if (v[i] && ui_button(i+11, 100+102, 34*i+100, 100, 32))
 			printf("button %d pressed\n", i);
-	ui_end();
+	if (ui_end())
+		printf("ui!\n");
 
 	al_flip_display();
 }

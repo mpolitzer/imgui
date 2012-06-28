@@ -18,14 +18,28 @@ struct uistate
 	int dragid; /* store the ID that issued a ui_drag */
 } uistate = {0,0,0,0,0};
 
+struct uistyle {
+	ALLEGRO_FONT *f;
+	ALLEGRO_COLOR fg, bg, over;
+} uistyle;
+
+void ui_setstyle(ALLEGRO_FONT *f,
+		ALLEGRO_COLOR fg,
+		ALLEGRO_COLOR bg,
+		ALLEGRO_COLOR over)
+{
+	uistyle.f = f;
+	uistyle.fg = fg;
+	uistyle.bg = bg;
+	uistyle.over = over;
+}
+
 static int regionhit(int x, int y, int w, int h)
 {
-	if (uistate.mousex < x ||
-			uistate.mousey < y ||
-			uistate.mousex >= x + w ||
-			uistate.mousey >= y + h)
-		return 0;
-	return 1;
+	return uistate.mousex > x
+		&& uistate.mousey > y
+		&& uistate.mousex <= x + w
+		&& uistate.mousey <= y + h;
 }
 
 static void draw_rect(int x, int y, int w, int h, float r, float g, float b)
@@ -46,7 +60,7 @@ static void draw_rect_gray(int x, int y, int w, int h, float c)
 	draw_rect(x, y, w, h, c, c, c);
 }
 
-void ui_update(ALLEGRO_EVENT *ev)
+int ui_update(ALLEGRO_EVENT *ev)
 {
 	switch (ev->type) {
 	case ALLEGRO_EVENT_MOUSE_BUTTON_UP:
@@ -66,7 +80,9 @@ void ui_update(ALLEGRO_EVENT *ev)
 	case ALLEGRO_EVENT_KEY_UP:
 		uistate.keyentered = 0;
 		uistate.keymod = 0;
+	default: return 0;
 	}
+	return 1;
 }
 
 void ui_begin(int w, int h)
@@ -247,4 +263,5 @@ int ui_vslider(int id, int x, int y, int max, int *value)
 	}
 	return 0;
 }
+
 

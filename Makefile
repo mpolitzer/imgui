@@ -1,5 +1,8 @@
 CC=gcc
-PKG=gl glu allegro-5.0 allegro_image-5.0
+PKG=gl glu allegro-5.0 \
+    allegro_image-5.0 \
+    allegro_font-5.0 \
+    allegro_ttf-5.0
 
 CFLAGS=-O2 -Wall -ggdb -funroll-loops -c `pkg-config --cflags ${PKG}`
 LDLIBS=-lm `pkg-config --libs ${PKG}`

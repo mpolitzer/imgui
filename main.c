@@ -8,6 +8,10 @@
 
 #include "ui.h"
 
+#ifndef FONT_DEFAULT
+#define FONT_DEFAULT "mono.ttf"
+#endif
+
 struct game {
 	unsigned int w, h;
 
@@ -61,26 +65,24 @@ void game_init(unsigned int w,
 		unsigned int fps,
 		unsigned int flags)
 {
-	if (!al_init())
-		die(1, "can't init allegro");
+	assert(al_init());
 
-	al_set_new_display_flags(
-			ALLEGRO_OPENGL
-			| (flags ? ALLEGRO_FULLSCREEN : 0));
-	if (!(G.display = al_create_display(w, h)))
-		die(2, "can't create display");
-	if (!(G.q = al_create_event_queue()))
-		die(3, "can't create event queue");
-	if (!(G.tick = al_create_timer(1.0 / fps)))
-		die(4, "tick died, invalid fps");
-	if (!al_init_image_addon())
-		die(5, "failed to load image addon");
-	if (!(al_install_mouse()))
-		die(6, "can't init mouse");
-	if (!(al_install_keyboard()))
-		die(7, "can't init keyboard");
+	al_set_new_display_flags(ALLEGRO_OPENGL);
+	assert((G.display = al_create_display(w, h)));
 	opengl_init();
 
+	assert((G.q = al_create_event_queue()));
+	assert((G.tick = al_create_timer(1.0 / fps)));
+	assert(al_init_image_addon());
+	al_init_font_addon();
+	assert(al_init_ttf_addon());
+	assert(al_install_mouse());
+	assert(al_install_keyboard());
+
+	ui_setstyle(al_load_ttf_font(FONT_DEFAULT, 12, 0),
+			al_map_rgb(157, 157, 157),
+			al_map_rgb(127, 127, 127),
+			al_map_rgb(107, 107, 107));
 	G.w = w;
 	G.h = h;
 
@@ -97,13 +99,11 @@ int game_update(void)
 	return 1;
 }
 
-void game_render(void)
+void ui_render(void)
 {
 	int i;
 	static char v[10];
 	int x, y;
-
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	ui_begin(G.w, G.h);
 
@@ -128,10 +128,11 @@ void game_render(void)
 	for (i=0; i<10; i++)
 		if (v[i] && ui_button(i+11, 100+102, 34*i+100, 100, 32))
 			printf("button %d pressed\n", i);
-	if (ui_end())
-		printf("ui!\n");
+	ui_end();
+}
 
-	al_flip_display();
+void game_render(void)
+{
 }
 
 void game_loop(void)
@@ -148,6 +149,7 @@ void game_loop(void)
 			redraw = game_update();
 
 		ui_update(&ev);
+
 		switch (ev.type) {
 		case ALLEGRO_EVENT_DISPLAY_CLOSE:
 			done=1;
@@ -155,7 +157,11 @@ void game_loop(void)
 		}
 
 		if (redraw && al_event_queue_is_empty(G.q)){
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			game_render();
+			ui_render();
+			al_flip_display();
+
 			redraw=0;
 		}
 	}

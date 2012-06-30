@@ -170,10 +170,7 @@ void rect_drawtext(rect_t r, ALLEGRO_COLOR c, const char *s)
 	rect_draw(r, c);
 
 	glBindTexture(GL_TEXTURE_2D, al_get_opengl_texture(uistyle.font12));
-	for (i=0; i<len; i++) {
-		drawchar(sx+i*fw, sy, s[i]);
-	}
-
+	for (i=0; i<len; i++) drawchar(sx+i*fw, sy, s[i]);
 }
 
 static void drawchar(int x, int y, unsigned char c)
@@ -224,15 +221,13 @@ int ui_buttonl(int id, rect_t r, const char *s)
 
 	rect_drawtext(pressedrect, uistyle.shadow, s);
 
-	if (uistate.hotitem == id)
-	{
+	if (uistate.hotitem == id) {
 		if (uistate.activeitem == id)
 			rect_drawtext(pressedrect, uistyle.active, s);
 		else
 			rect_drawtext(r, uistyle.hot, s);
-	} else {
+	} else
 		rect_drawtext(r, uistyle.away, s);
-	}
 
 	if (uistate.kbditem == id) {
 		if (uistate.keyentered == ALLEGRO_KEY_ENTER) {
@@ -265,13 +260,11 @@ int ui_drag(int id, rect_t r, int *dx, int *dy)
 
 	if (dragid == id || rect_hit(r)) {
 		uistate.hotitem = id;
-		if (uistate.activeitem == 0 && uistate.mousedown) {
+		if (uistate.activeitem == 0 && uistate.mousedown)
 			uistate.activeitem = id;
-		}
 	}
 
-	if (uistate.hotitem == id)
-	{
+	if (uistate.hotitem == id) {
 		if (uistate.activeitem == id) {
 			int x = uistate.mousex - r.w / 2;
 			int y = uistate.mousey - r.h / 2;
@@ -280,12 +273,10 @@ int ui_drag(int id, rect_t r, int *dx, int *dy)
 			rect_draw(atmouse, uistyle.active);
 			dragid = id;
 			uistate.dragid = id;
-		}
-		else
+		} else
 			rect_draw(r, uistyle.hot);
-	} else {
+	} else
 		rect_draw(r, uistyle.away);
-	}
 
 	if (uistate.mousedown == 0
 			&& uistate.hotitem == id

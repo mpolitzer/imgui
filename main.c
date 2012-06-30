@@ -8,10 +8,6 @@
 
 #include "ui.h"
 
-#ifndef FONT_DEFAULT
-#define FONT_DEFAULT "mono.ttf"
-#endif
-
 struct game {
 	unsigned int w, h;
 
@@ -19,24 +15,6 @@ struct game {
 	ALLEGRO_TIMER *tick;
 	ALLEGRO_EVENT_QUEUE *q;
 } G;
-
-struct uielements {
-	int slider;
-	int drag_drop[8];
-} uielements = {0, {1, 1, 1, 1, 1, 1, 1, 1}};
-
-#define die(error, ...) _die(error, __FILE__, __LINE__, __VA_ARGS__)
-void _die(int error, char* filename, int line, const char* format, ...)
-{
-	va_list args;
-
-	fprintf(stderr, "[%s:%d] ", filename, line);
-	va_start(args, format);
-	vfprintf(stderr, format, args);
-	va_end(args);
-	fprintf(stderr, "\n");
-	exit(error);
-}
 
 static void opengl_init(void)
 {
@@ -47,17 +25,21 @@ static void opengl_init(void)
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_COLOR_MATERIAL);
 
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glOrtho(0, G.w, G.h, 0, -1, 1);
+	glShadeModel(GL_SMOOTH);
 
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
+	glEnable(GL_BLEND);
+	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	/* texture to gl */
 	glEnable(GL_TEXTURE_2D);
-
-	glShadeModel(GL_SMOOTH);
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+			GL_LINEAR_MIPMAP_NEAREST);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 }
 
 void game_init(unsigned int w,
@@ -67,22 +49,17 @@ void game_init(unsigned int w,
 {
 	assert(al_init());
 
-	al_set_new_display_flags(ALLEGRO_OPENGL);
+	al_set_new_display_flags(ALLEGRO_OPENGL|ALLEGRO_RESIZABLE);
 	assert((G.display = al_create_display(w, h)));
 	opengl_init();
 
 	assert((G.q = al_create_event_queue()));
 	assert((G.tick = al_create_timer(1.0 / fps)));
 	assert(al_init_image_addon());
-	al_init_font_addon();
-	assert(al_init_ttf_addon());
 	assert(al_install_mouse());
 	assert(al_install_keyboard());
 
-	ui_setstyle(al_load_ttf_font(FONT_DEFAULT, 12, 0),
-			al_map_rgb(157, 157, 157),
-			al_map_rgb(127, 127, 127),
-			al_map_rgb(107, 107, 107));
+	ui_setstyle_default();
 	G.w = w;
 	G.h = h;
 
@@ -99,35 +76,60 @@ int game_update(void)
 	return 1;
 }
 
+char character_name[21] = "name";
+
 void ui_render(void)
 {
-	int i;
-	static char v[10];
+	int i, dragbase;
 	int x, y;
+
+	static int toggle[4];
+	const char *opts[4] = {
+		"items",
+		"equips",
+		"stats",
+		"skills",
+	};
 
 	ui_begin(G.w, G.h);
 
-	if (ui_vslider(50, 300, 300, 100, &uielements.slider))
-		printf("[ui_slider]: %d\n", uielements.slider);
+	switch (ui_textfield(50, ui_mkrect(150, 32, 150, 16),
+				character_name, 20)) {
+	case 2: printf("%s\n", character_name); break;
+	case 1: printf("changed\n"); break;
+	}
 
-	for (i=0; i<20; i++)
-		ui_drag(400+i, 350+33*(i%3), 350+33*(i/3), 32, 32, &x, &y);
-	for (i=0; i<20; i++) {
-		int drop=0;
-		drop = ui_drop(400+i, 550+33*(i%3), 350+33*(i/3), 32, 32, x, y);
-		if (drop) {
-			printf("[ui_drop]: (%d,%d) %d -> %d\n",
-					x, y, drop-400, i);
+	for (i=0; i<4; i++) {
+		if (ui_buttonl(i+1, ui_mkrect(5, 17*i+5, 64, 16), opts[i])) {
+			toggle[i] = !toggle[i];
+			printf("%d %s -> %d\n", i, opts[i], toggle[i]);
 		}
 	}
-	for (i=0; i<10; i++)
-		if (ui_button(i+1, 100, 34*i+100, 100, 32)) {
-			printf("submenu toggle\n");
-			v[i] = ~v[i];
+
+	if (toggle[0]) {
+		for (i=0; i<21; i++) {
+			int posx = 150+33*(i%3);
+			int posy = 350+33*(i/3);
+			int dragv;
+
+			dragv = ui_drag(100+i, ui_mkrect(posx, posy, 32, 32), &x, &y);
+			if (dragv) {
+				dragbase = 100;
+				printf("dragv: %d\n", dragv);
+			}
 		}
-	for (i=0; i<10; i++)
-		if (v[i] && ui_button(i+11, 100+102, 34*i+100, 100, 32))
-			printf("button %d pressed\n", i);
+
+		for (i=0; i<21; i++) {
+			int drop=0;
+			int posx = 350+33*(i%3);
+			int posy = 350+33*(i/3);
+
+			drop = ui_drop(200+i, ui_mkrect(posx, posy, 32, 32), x, y);
+			if (drop)
+				printf("[ui_drop]: (%d,%d) %d -> %d\n",
+						x, y, drop-dragbase, i);
+		}
+	}
 	ui_end();
 }
 
@@ -154,6 +156,14 @@ void game_loop(void)
 		case ALLEGRO_EVENT_DISPLAY_CLOSE:
 			done=1;
 			break;
+		case ALLEGRO_EVENT_DISPLAY_RESIZE:
+			al_acknowledge_resize(ev.display.source);
+
+			G.w = ev.display.width;
+			G.h = ev.display.height;
+
+			printf("resize to: %d %d\n", G.w, G.h);
+			break;
 		}
 
 		if (redraw && al_event_queue_is_empty(G.q)){
@@ -169,6 +179,10 @@ void game_loop(void)
 
 void game_end(void)
 {
+	al_destroy_display(G.display);
+	al_destroy_timer(G.tick);
+	al_destroy_event_queue(G.q);
+	ui_finish();
 }
 
 int main(int argc, const char *argv[])
